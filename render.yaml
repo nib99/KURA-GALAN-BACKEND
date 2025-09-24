@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: kuraa-galaan-backend
+    env: node
+    plan: starter
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kuraa-galaan-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://kuraa-galaan-website.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://kuraa-galaan-website.vercel.app,http://localhost:3000
+
+databases:
+  - name: kuraa-galaan-db
+    databaseName: kuraa_galaan
+    user: kuraa_galaan_user
+    plan: starter
