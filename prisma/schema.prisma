@@ -1,5 +1,5 @@
 // Kuraa Galaan Charity Database Schema
-// Prisma schema for Kuraa Galaan charity platform
+// This is the Prisma schema file for Kuraa Galaan charity platform
 
 generator client {
   provider = "prisma-client-js"
@@ -9,8 +9,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// ================= ENUMS =================
 
 enum UserRole {
   USER
@@ -65,47 +63,239 @@ enum NotificationType {
   IN_APP
 }
 
-// ================= MODELS =================
-
 model User {
-  id                String      @id @default(cuid())
-  email             String      @unique
-  password          String
-  firstName         String
-  lastName          String
-  phone             String?
-  avatar            String?
-  role              UserRole    @default(USER)
-  status            UserStatus  @default(PENDING_VERIFICATION)
-  emailVerified     Boolean     @default(false)
-  phoneVerified     Boolean     @default(false)
-
-  // Verification tokens
+  id                     String         @id @default(cuid())
+  email                  String         @unique
+  password               String
+  firstName              String
+  lastName               String
+  phone                  String?
+  avatar                 String?
+  role                   UserRole       @default(USER)
+  status                 UserStatus     @default(PENDING_VERIFICATION)
+  emailVerified          Boolean        @default(false)
+  phoneVerified          Boolean        @default(false)
   emailVerificationToken String?
   phoneVerificationToken String?
   passwordResetToken     String?
   passwordResetExpires   DateTime?
+  bio                    String?
+  website                String?
+  location               String?
+  dateOfBirth            DateTime?
+  gender                 String?
+  occupation             String?
+  address                String?
+  city                   String?
+  state                  String?
+  country                String?        @default("Ethiopia")
+  postalCode             String?
+  newsletter             Boolean        @default(true)
+  notifications          Boolean        @default(true)
+  publicProfile          Boolean        @default(false)
+  language               String         @default("en")
+  timezone               String         @default("Africa/Addis_Ababa")
+  currency               String         @default("ETB")
+  facebookUrl            String?
+  twitterUrl             String?
+  linkedinUrl            String?
+  instagramUrl           String?
+  stripeCustomerId       String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  lastLoginAt            DateTime?
+  lastActiveAt           DateTime?
+  donations              Donation[]
+  campaigns              Campaign[]
+  refreshTokens          RefreshToken[]
+  notifications          Notification[] @relation("UserNotifications")
+  auditLogs              AuditLog[]
+  @@map("users")
+}
 
-  // Profile information
-  bio               String?
-  website           String?
-  location          String?
-  dateOfBirth       DateTime?
-  gender            String?
-  occupation        String?
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean          @default(false)
+  sent      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  sentAt    DateTime?
+  user      User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notifications")
+}
 
-  // Address information
-  address           String?
-  city              String?
-  state             String?
-  country           String?   @default("Ethiopia")
-  postalCode        String?
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("refresh_tokens")
+}
 
-  // Preferences
-  newsletter        Boolean     @default(true)
-  notificationPref  Boolean     @default(true)   // ✅ renamed from "notifications"
-  publicProfile     Boolean     @default(false)
-  language          String      @default("en")
+model Campaign {
+  id              String         @id @default(cuid())
+  title           String
+  slug            String         @unique
+  description     String
+  shortDescription String?
+  content         String?
+  goalAmount      Float
+  currentAmount   Float          @default(0)
+  currency        String         @default("ETB")
+  featuredImage   String?
+  images          String[]
+  video           String?
+  documents       String[]
+  category        String
+  tags            String[]
+  location        String?
+  beneficiaryCount Int?
+  urgencyLevel    String?        @default("medium")
+  status          CampaignStatus @default(DRAFT)
+  startDate       DateTime?
+  endDate         DateTime?
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  contactEmail    String?
+  contactPhone    String?
+  metaTitle       String?
+  metaDescription String?
+  keywords        String[]
+  shareCount      Int            @default(0)
+  viewCount       Int            @default(0)
+  verified        Boolean        @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  publishedAt     DateTime?
+  donations       Donation[]
+  updates         CampaignUpdate[]
+  @@map("campaigns")
+}
+
+model CampaignUpdate {
+  id          String   @id @default(cuid())
+  campaignId  String
+  title       String
+  content     String
+  images      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  @@map("campaign_updates")
+}
+
+model Donation {
+  id                String         @id @default(cuid())
+  amount            Float
+  currency          String
+  amountInETB       Float?
+  exchangeRate      Float?
+  paymentMethod     PaymentMethod
+  paymentReference  String?
+  transactionId     String?
+  status            DonationStatus @default(PENDING)
+  userId            String?
+  user              User?          @relation(fields: [userId], references: [id])
+  donorName         String?
+  donorEmail        String?
+  donorPhone        String?
+  isAnonymous       Boolean        @default(false)
+  campaignId        String
+  campaign          Campaign       @relation(fields: [campaignId], references: [id])
+  message           String?
+  dedicatedTo       String?
+  isRecurring       Boolean        @default(false)
+  recurringInterval String?
+  taxDeductible     Boolean        @default(true)
+  receiptSent       Boolean        @default(false)
+  receiptSentAt     DateTime?
+  processingFee     Float?
+  netAmount         Float?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  completedAt       DateTime?
+  failedAt          DateTime?
+  transactions      Transaction[]
+  @@map("donations")
+}
+
+model Transaction {
+  id            String         @id @default(cuid())
+  amount        Float
+  currency      String
+  type          TransactionType
+  status        String
+  description   String?
+  gatewayId     String
+  gatewayType   PaymentMethod
+  gatewayResponse Json?
+  gatewayFee    Float?
+  donationId    String
+  donation      Donation       @relation(fields: [donationId], references: [id])
+  reconciled    Boolean        @default(false)
+  reconciledAt  DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  @@map("transactions")
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  type        String   @default("string")
+  category    String   @default("general")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("settings")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+  @@map("audit_logs")
+}
+
+model EmailTemplate {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  subject    String
+  htmlBody   String
+  textBody   String?
+  variables  String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@map("email_templates")
+}
+
+model SystemHealth {
+  id            String   @id @default(cuid())
+  service       String
+  status        String
+  responseTime  Int?
+  errorMessage  String?
+  metadata      Json?
+  checkedAt     DateTime @default(now())
+  @@map("system_health")
+}  language          String      @default("en")
   timezone          String      @default("Africa/Addis_Ababa")
   currency          String      @default("ETB")
 
