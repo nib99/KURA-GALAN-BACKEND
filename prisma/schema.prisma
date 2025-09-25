@@ -384,6 +384,219 @@ model SystemHealth {
   checkedAt     DateTime @default(now())
   
   @@map("system_health")
+}  endDate         DateTime?
+  
+  // Creator information
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  
+  // Contact information
+  contactEmail    String?
+  contactPhone    String?
+  
+  // SEO and metadata
+  metaTitle       String?
+  metaDescription String?
+  keywords        String[]
+  
+  // Social sharing
+  shareCount      Int            @default(0)
+  viewCount       Int            @default(0)
+  
+  // Verification
+  verified        Boolean        @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  publishedAt     DateTime?
+  
+  // Relations
+  donations       Donation[]
+  updates         CampaignUpdate[]
+  
+  @@map("campaigns")
+}
+
+model CampaignUpdate {
+  id          String   @id @default(cuid())
+  campaignId  String
+  title       String
+  content     String
+  images      String[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@map("campaign_updates")
+}
+
+model Donation {
+  id                String         @id @default(cuid())
+  
+  // Amount and currency
+  amount            Float
+  currency          String
+  amountInETB       Float?         // Converted amount for reporting
+  exchangeRate      Float?         // Exchange rate used
+  
+  // Payment information
+  paymentMethod     PaymentMethod
+  paymentReference  String?        // Gateway transaction ID
+  transactionId     String?        // Internal transaction ID
+  
+  // Status
+  status            DonationStatus @default(PENDING)
+  
+  // Donor information
+  userId            String?
+  user              User?          @relation(fields: [userId], references: [id])
+  donorName         String?
+  donorEmail        String?
+  donorPhone        String?
+  isAnonymous       Boolean        @default(false)
+  
+  // Campaign
+  campaignId        String
+  campaign          Campaign       @relation(fields: [campaignId], references: [id])
+  
+  // Additional information
+  message           String?
+  dedicatedTo       String?
+  isRecurring       Boolean        @default(false)
+  recurringInterval String?        // monthly, quarterly, yearly
+  
+  // Tax information
+  taxDeductible     Boolean        @default(true)
+  receiptSent       Boolean        @default(false)
+  receiptSentAt     DateTime?
+  
+  // Processing information
+  processingFee     Float?
+  netAmount         Float?
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  completedAt       DateTime?
+  failedAt          DateTime?
+  
+  // Relations
+  transactions      Transaction[]
+  
+  @@map("donations")
+}
+
+model Transaction {
+  id                String         @id @default(cuid())
+  
+  // Transaction details
+  amount            Float
+  currency          String
+  type              TransactionType
+  status            String
+  description       String?
+  
+  // Payment gateway information
+  gatewayId         String
+  gatewayType       PaymentMethod
+  gatewayResponse   Json?
+  gatewayFee        Float?
+  
+  // Reference
+  donationId        String
+  donation          Donation       @relation(fields: [donationId], references: [id])
+  
+  // Reconciliation
+  reconciled        Boolean        @default(false)
+  reconciledAt      DateTime?
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  @@map("transactions")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean          @default(false)
+  sent      Boolean          @default(false)
+  
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  sentAt    DateTime?
+  
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string") // string, number, boolean, json
+  category  String   @default("general")
+  description String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  resourceId String?
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  @@map("audit_logs")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  subject   String
+  htmlBody  String
+  textBody  String?
+  variables String[] // List of template variables
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("email_templates")
+}
+
+model SystemHealth {
+  id            String   @id @default(cuid())
+  service       String
+  status        String   // healthy, degraded, down
+  responseTime  Int?     // in milliseconds
+  errorMessage  String?
+  metadata      Json?
+  
+  checkedAt     DateTime @default(now())
+  
+  @@map("system_health")
 }// Social media
 facebookUrl       String?
 twitterUrl        String?
