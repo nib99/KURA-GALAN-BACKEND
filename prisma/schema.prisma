@@ -115,21 +115,27 @@ model User {
   stripeCustomerId  String?
   
   // Timestamps
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  lastLoginAt       DateTime?
-  lastActiveAt      DateTime?
-  
-  // Relations
-  donations         Donation[]
-  campaigns         Campaign[]
-  refreshTokens     RefreshToken[]
-notifications Notification[] 
-@relation("UserNotifications")
-
-  auditLogs         AuditLog[]
-  
+  model User {
+  id            String         @id @default(cuid())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lastLoginAt   DateTime?
+  lastActiveAt  DateTime?
+  donations     Donation[]
+  campaigns     Campaign[]
+  refreshTokens RefreshToken[]
+  notifications Notification[] @relation("UserNotifications")
+  auditLogs     AuditLog[]
   @@map("users")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("notifications")
 }
 
 model RefreshToken {
@@ -138,9 +144,7 @@ model RefreshToken {
   userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   @@map("refresh_tokens")
 }
 
