@@ -603,9 +603,9 @@ model EmailTemplate {
 }
 
 model SystemHealth {
-  id        String   @id @default(uuid())
-  checkedAt DateTime @default(now())
-  status    String?
+id String @id @default(uuid()) 
+  checkedAt     DateTime @default(now())
+status String?
   @@map("system_health")
 }
 // Social media
