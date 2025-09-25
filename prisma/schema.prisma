@@ -124,6 +124,9 @@ model User {
   donations         Donation[]
   campaigns         Campaign[]
   refreshTokens     RefreshToken[]
+notifications Notification[] 
+@relation("UserNotifications")
+
   auditLogs         AuditLog[]
   
   @@map("users")
