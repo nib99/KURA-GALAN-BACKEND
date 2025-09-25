@@ -603,17 +603,12 @@ model EmailTemplate {
 }
 
 model SystemHealth {
-  id            String   @id @default(cuid())
-  service       String
-  status        String   // healthy, degraded, down
-  responseTime  Int?     // in milliseconds
-  errorMessage  String?
-  metadata      Json?
-  
-  checkedAt     DateTime @default(now())
-  
+  id        String   @id @default(uuid())
+  checkedAt DateTime @default(now())
+  status    String?
   @@map("system_health")
-}// Social media
+}
+// Social media
 facebookUrl       String?
 twitterUrl        String?
 linkedinUrl       String?
