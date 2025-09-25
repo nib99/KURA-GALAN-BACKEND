@@ -383,8 +383,15 @@ model SystemHealth {
   
   checkedAt     DateTime @default(now())
   
-  @@map("system_health")
-}  endDate         DateTime?
+model Campaign {
+  // Assuming this is the intended model name based on @@map("campaigns")
+  id              String         @id @default(uuid())
+  title           String
+  description     String?
+  goalAmount      Float
+  currentAmount   Float          @default(0)
+  startDate       DateTime?
+  endDate         DateTime?
   
   // Creator information
   createdById     String
@@ -417,6 +424,15 @@ model SystemHealth {
   donations       Donation[]
   updates         CampaignUpdate[]
   
+  // Social media
+  facebookUrl     String?
+  twitterUrl      String?
+  linkedinUrl     String?
+  instagramUrl    String?
+  
+  // Stripe customer ID for recurring donations
+  stripeCustomerId String?
+
   @@map("campaigns")
 }
 
