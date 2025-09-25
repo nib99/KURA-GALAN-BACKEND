@@ -124,7 +124,6 @@ model User {
   donations         Donation[]
   campaigns         Campaign[]
   refreshTokens     RefreshToken[]
-  notifications     Notification[]
   auditLogs         AuditLog[]
   
   @@map("users")
