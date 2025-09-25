@@ -2,110 +2,389 @@
 // This is your Prisma schema file for Kuraa Galaan charity platform
 
 generator client {
-provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-provider = "postgresql"
-url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
-USER
-ADMIN
-MODERATOR
-VOLUNTEER
+  USER
+  ADMIN
+  MODERATOR
+  VOLUNTEER
 }
 
 enum UserStatus {
-ACTIVE
-INACTIVE
-SUSPENDED
-PENDING_VERIFICATION
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
 }
 
 enum CampaignStatus {
-DRAFT
-ACTIVE
-PAUSED
-COMPLETED
-CANCELLED
-ARCHIVED
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+  ARCHIVED
 }
 
 enum DonationStatus {
-PENDING
-PROCESSING
-COMPLETED
-FAILED
-CANCELLED
-REFUNDED
-EXPIRED
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  EXPIRED
 }
 
 enum PaymentMethod {
-STRIPE
-CHAPA
-TELEBIRR
+  STRIPE
+  CHAPA
+  TELEBIRR
 }
 
 enum TransactionType {
-DONATION
-REFUND
-FEE
-WITHDRAWAL
+  DONATION
+  REFUND
+  FEE
+  WITHDRAWAL
 }
 
 enum NotificationType {
-EMAIL
-SMS
-PUSH
-IN_APP
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
 }
 
 model User {
-id                String      @id @default(cuid())
-email             String      @unique
-password          String
-firstName         String
-lastName          String
-phone             String?
-avatar            String?
-role              UserRole    @default(USER)
-status            UserStatus  @default(PENDING_VERIFICATION)
-emailVerified     Boolean     @default(false)
-phoneVerified     Boolean     @default(false)
+  id                String      @id @default(cuid())
+  email             String      @unique
+  password          String
+  firstName         String
+  lastName          String
+  phone             String?
+  avatar            String?
+  role              UserRole    @default(USER)
+  status            UserStatus  @default(PENDING_VERIFICATION)
+  emailVerified     Boolean     @default(false)
+  phoneVerified     Boolean     @default(false)
+  
+  // Verification tokens
+  emailVerificationToken String?
+  phoneVerificationToken String?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  
+  // Profile information
+  bio               String?
+  website           String?
+  location          String?
+  dateOfBirth       DateTime?
+  gender            String?
+  occupation        String?
+  
+  // Address information
+  address           String?
+  city              String?
+  state             String?
+  country           String?   @default("Ethiopia")
+  postalCode        String?
+  
+  // Preferences
+  newsletter        Boolean     @default(true)
+  notifications     Boolean     @default(true)
+  publicProfile     Boolean     @default(false)
+  language          String      @default("en")
+  timezone          String      @default("Africa/Addis_Ababa")
+  currency          String      @default("ETB")
+  
+  // Social media
+  facebookUrl       String?
+  twitterUrl        String?
+  linkedinUrl       String?
+  instagramUrl      String?
+  
+  // Stripe customer ID for recurring donations
+  stripeCustomerId  String?
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  lastLoginAt       DateTime?
+  lastActiveAt      DateTime?
+  
+  // Relations
+  donations         Donation[]
+  campaigns         Campaign[]
+  refreshTokens     RefreshToken[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  
+  @@map("users")
+}
 
-// Verification tokens
-emailVerificationToken String?
-phoneVerificationToken String?
-passwordResetToken     String?
-passwordResetExpires   DateTime?
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+}
 
-// Profile information
-bio               String?
-website           String?
-location          String?
-dateOfBirth       DateTime?
-gender            String?
-occupation        String?
+model Campaign {
+  id              String         @id @default(cuid())
+  title           String
+  slug            String         @unique
+  description     String
+  shortDescription String?
+  content         String?
+  
+  // Financial information
+  goalAmount      Float
+  currentAmount   Float          @default(0)
+  currency        String         @default("ETB")
+  
+  // Media
+  featuredImage   String?
+  images          String[]
+  video           String?
+  documents       String[]
+  
+  // Campaign details
+  category        String
+  tags            String[]
+  location        String?
+  beneficiaryCount Int?
+  urgencyLevel    String?        @default("medium") // low, medium, high, critical
+  
+  // Status and timing
+  status          CampaignStatus @default(DRAFT)
+  startDate       DateTime?
+  endDate         DateTime?
+  
+  // Creator information
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  
+  // Contact information
+  contactEmail    String?
+  contactPhone    String?
+  
+  // SEO and metadata
+  metaTitle       String?
+  metaDescription String?
+  keywords        String[]
+  
+  // Social sharing
+  shareCount      Int            @default(0)
+  viewCount       Int            @default(0)
+  
+  // Verification
+  verified        Boolean        @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  publishedAt     DateTime?
+  
+  // Relations
+  donations       Donation[]
+  updates         CampaignUpdate[]
+  
+  @@map("campaigns")
+}
 
-// Address information
-address           String?
-city              String?
-state             String?
-country           String?   @default("Ethiopia")
-postalCode        String?
+model CampaignUpdate {
+  id          String   @id @default(cuid())
+  campaignId  String
+  title       String
+  content     String
+  images      String[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@map("campaign_updates")
+}
 
-// Preferences
-newsletter        Boolean     @default(true)
-notifications     Boolean     @default(true)
-publicProfile     Boolean     @default(false)
-language          String      @default("en")
-timezone          String      @default("Africa/Addis_Ababa")
-currency          String      @default("ETB")
+model Donation {
+  id                String         @id @default(cuid())
+  
+  // Amount and currency
+  amount            Float
+  currency          String
+  amountInETB       Float?         // Converted amount for reporting
+  exchangeRate      Float?         // Exchange rate used
+  
+  // Payment information
+  paymentMethod     PaymentMethod
+  paymentReference  String?        // Gateway transaction ID
+  transactionId     String?        // Internal transaction ID
+  
+  // Status
+  status            DonationStatus @default(PENDING)
+  
+  // Donor information
+  userId            String?
+  user              User?          @relation(fields: [userId], references: [id])
+  donorName         String?
+  donorEmail        String?
+  donorPhone        String?
+  isAnonymous       Boolean        @default(false)
+  
+  // Campaign
+  campaignId        String
+  campaign          Campaign       @relation(fields: [campaignId], references: [id])
+  
+  // Additional information
+  message           String?
+  dedicatedTo       String?
+  isRecurring       Boolean        @default(false)
+  recurringInterval String?        // monthly, quarterly, yearly
+  
+  // Tax information
+  taxDeductible     Boolean        @default(true)
+  receiptSent       Boolean        @default(false)
+  receiptSentAt     DateTime?
+  
+  // Processing information
+  processingFee     Float?
+  netAmount         Float?
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  completedAt       DateTime?
+  failedAt          DateTime?
+  
+  // Relations
+  transactions      Transaction[]
+  
+  @@map("donations")
+}
 
-// Social media
+model Transaction {
+  id                String         @id @default(cuid())
+  
+  // Transaction details
+  amount            Float
+  currency          String
+  type              TransactionType
+  status            String
+  description       String?
+  
+  // Payment gateway information
+  gatewayId         String
+  gatewayType       PaymentMethod
+  gatewayResponse   Json?
+  gatewayFee        Float?
+  
+  // Reference
+  donationId        String
+  donation          Donation       @relation(fields: [donationId], references: [id])
+  
+  // Reconciliation
+  reconciled        Boolean        @default(false)
+  reconciledAt      DateTime?
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  @@map("transactions")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean          @default(false)
+  sent      Boolean          @default(false)
+  
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  sentAt    DateTime?
+  
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string") // string, number, boolean, json
+  category  String   @default("general")
+  description String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  resourceId String?
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  @@map("audit_logs")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  subject   String
+  htmlBody  String
+  textBody  String?
+  variables String[] // List of template variables
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("email_templates")
+}
+
+model SystemHealth {
+  id            String   @id @default(cuid())
+  service       String
+  status        String   // healthy, degraded, down
+  responseTime  Int?     // in milliseconds
+  errorMessage  String?
+  metadata      Json?
+  
+  checkedAt     DateTime @default(now())
+  
+  @@map("system_health")
+}// Social media
 facebookUrl       String?
 twitterUrl        String?
 linkedinUrl       String?
